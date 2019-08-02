@@ -1,0 +1,2 @@
+module QueryhandleHelper
+end
