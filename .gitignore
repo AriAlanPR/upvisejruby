@@ -24,7 +24,7 @@
 .byebug_history
 
 #ignore warbler generated file
-upvisehook.war
+/upvisehook.war
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key
