@@ -23,6 +23,8 @@
 /public/assets
 .byebug_history
 
+#ignore vs code debugger files
+/.vscode
 #ignore warbler generated file
 /upvisehook.war
 
