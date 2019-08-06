@@ -63,7 +63,7 @@ class QueryhandleController < ApplicationController
         sales_product.put("stock", query_params['stock'])
         sales_product.put("date", (Time.now.to_f * 1000).to_i)
         #insert product as type 0 1 product to upvise
-        query = uv_query.insert('sales.products', sales_product)
+        uv_query.insert('sales.products', sales_product)
         #verify it exists
         where = "name='#{query_params['name']}' AND price=#{query_params['price']} AND type=#{query_params['type']}"
         status = uv_query.select('sales.products', where) ? 200 : 401
