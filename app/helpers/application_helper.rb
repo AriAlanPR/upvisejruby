@@ -1,4 +1,6 @@
 module ApplicationHelper
+    require 'json'
+    
     def ns_url_org(organization)
         if (organization == "0")
              init_NS_Connector('TSTDRV1681055', 'tstdrv1681055',3) #ONE WORLD
@@ -47,5 +49,12 @@ module ApplicationHelper
                 "Accept" => "application/json" 
             }
         end
+    end
+
+    #this helps to decode netsuite json text result
+    def decode_ns_result(item)
+        ihashable = ActiveSupport::JSON.decode(item) 
+        p 'till here going well'
+        return JSON.parse(ihashable) || ihashable 
     end
 end

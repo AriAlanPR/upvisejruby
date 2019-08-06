@@ -1,20 +1,9 @@
 class QueryhandleController < ApplicationController
     #include_package 'com.upvise.client'
-
-    def init_connector
-        init_NS_Connector('TSTDRV1681055', 'tstdrv1681055', 3)
-    end
-
-    def decode_ns_result(item)
-        ihashable = ActiveSupport::JSON.decode(item) 
-        p 'till here going well'
-        return JSON.parse(ihashable) || ihashable 
-    end    
-
     def obtain
         init_connector()
 
-        item_ns = params['item']
+        item_ns = query_params['item']
         item_result = ns_get("https://tstdrv1681055.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=627&deploy=1&recordtype=serializedassemblyitem&id=#{item_ns}",true)
         if item_result.code == 400
             item_result = ns_get("https://tstdrv1681055.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=627&deploy=1&recordtype=inventoryitem&id=#{item_ns}",true)
@@ -63,29 +52,33 @@ class QueryhandleController < ApplicationController
 
     def push_from_netsuite      
         #initialize json as java json object
-        sales_product = Java::OrgJson::JSONObject.new
-        sales_product.put("categoryid", "jruby")
-        sales_product.put("description", "Jruby rails item on the rcase")
-        sales_product.put("lowstock", 0)
-        sales_product.put("price", 10000)
-        sales_product.put("name", "rockin jruby")
-        sales_product.put("purchaseprice", 100)
-        sales_product.put("type", 0)
-        sales_product.put("stock", 600)
-
+        sales_product = java_json.new
+        sales_product.put("categoryid", query_params['categoryid'])
+        sales_product.put("description", query_params['description'])
+        sales_product.put("lowstock", query_params['lowstock'])
+        sales_product.put("price", query_params['price'])
+        sales_product.put("name", query_params['name'])
+        sales_product.put("purchaseprice", query_params['purchaseprice'])
+        sales_product.put("type", query_params['type'])
+        sales_product.put("stock", query_params['stock'])
+        sales_product.put("date", (Time.now.to_f * 1000).to_i)
+        #insert product as type 0 1 product to upvise
         query = uv_query.insert('sales.products', sales_product)
-
+        #verify it exists
+        where = "name='#{query_params['name']}' AND price=#{query_params['price']} AND type=#{query_params['type']}"
+        status = uv_query.select('sales.products', where) ? 200 : 401
+        resolve = status == 200 ? {:resolve => sales_product.to_s} : {:reject => "Couldn't add values and object to upvise cloud database"}
         #upvise_test_code(sales_product)
 
         respond_to do |format|     
             response.set_header('Access-Control-Allow-Origin', '*')
             response.set_header('Access-Control-Allow-Credentials','true')
             response.set_header('Accept', 'application/json')
-            format.json {render status: 200,  json: {:result => sales_product.to_s}}
+            format.json {render status: status,  json: resolve}
         end 
     end
 
-    def get_upvise_products
+    def get_listof_upvise_products
         query = uv_query.select('sales.products', 'type=0')
         products = Array.new
         query.each do |product|
@@ -96,13 +89,24 @@ class QueryhandleController < ApplicationController
             response.set_header('Access-Control-Allow-Origin', '*')
             response.set_header('Access-Control-Allow-Credentials','true')
             response.set_header('Accept', 'application/json')
-            format.json {render status: 200,  json: {:result => products}}
+            format.json {render status: 200,  json: {:upvise_listof_products => products}}
+        end 
+    end
+
+    def get_single_upvise_product
+        product = uv_query.selectId('sales.products', query_params['item'])
+
+        respond_to do |format|     
+            response.set_header('Access-Control-Allow-Origin', '*')
+            response.set_header('Access-Control-Allow-Credentials','true')
+            response.set_header('Accept', 'application/json')
+            format.json {render status: 200,  json: {:upvise_product => product.getString("name")}}
         end 
     end
 
 
     def insert_contact
-        contact = Java::OrgJson::JSONObject.new
+        contact = java_json.new
         contact.put("id", "1")
         contact.put("contact", "Cambria")
         contact.put("name", "Jruby cooler")
@@ -132,5 +136,10 @@ class QueryhandleController < ApplicationController
         frame.setDefaultCloseOperation(javax.swing.JFrame::EXIT_ON_CLOSE)
         frame.pack
         frame.setVisible(true) 
+    end
+
+    def query_params
+        p params
+        params.require(:queryhandle).permit(:format,:id, :categoryid, :description, :lowstock, :price, :purchaseprice, :name, :type, :stock, :item)
     end
 end

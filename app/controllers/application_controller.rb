@@ -4,6 +4,10 @@ class ApplicationController < ActionController::Base
     require 'UpviseClient.jar' #import upvise java library
     protect_from_forgery with: :null_session
 
+    def init_connector
+        init_NS_Connector('TSTDRV1681055', 'tstdrv1681055', 3)
+    end  
+
     def upvise_user
         'dmceldow@hotmail.com'
     end
@@ -19,6 +23,10 @@ class ApplicationController < ActionController::Base
 
     def uv_client_query
         uv_client::Query
+    end
+
+    def java_json
+        Java::OrgJson::JSONObject
     end
 
     def uv_token 
